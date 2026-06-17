@@ -1,0 +1,68 @@
+// DocChat Prisma schema
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// An uploaded document. Text is extracted, chunked, embedded, and stored.
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  documents    Document[]
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  name      String
+  status    String   @default("processing") // processing | ready | failed
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  chunks   Chunk[]
+  messages Message[]
+
+  @@index([userId])
+}
+
+// A chat message tied to a document (conversation history).
+model Message {
+  id         String   @id @default(cuid())
+  documentId String
+  role       String // user | assistant
+  content    String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+// A chunk of a document plus its embedding vector (pgvector).
+// embedding is `Unsupported` because Prisma has no native vector type;
+// we read/write it with raw SQL. Dimension 768 = Google Gemini text-embedding-004.
+model Chunk {
+  id         String   @id @default(cuid())
+  documentId String
+  content    String
+  chunkIndex Int
+  createdAt  DateTime @default(now())
+
+  embedding Unsupported("vector(768)")?
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}

@@ -1,0 +1,22 @@
+# Render Blueprint for DocChat.
+# On Render: New → Blueprint → connect this repo. Render reads this file.
+# The four secrets below are marked sync:false — enter them in the Render
+# dashboard (they are never committed to git).
+services:
+  - type: web
+    name: docchat
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
