@@ -4,19 +4,6 @@ Upload a PDF and ask questions in plain language. DocChat answers **only** from 
 
 > Embed your documents → search them by meaning → get grounded, cited answers that refuse to hallucinate.
 
-[**Live demo**](#) · A sample document is one click away — open the app, click **"try a sample document,"** and start asking.
-
----
-
-## Demo
-
-![DocChat — asking a question and getting a cited, streamed answer](docs/demo.gif)
-
-> _Replace the image above with your own recording._ To make `docs/demo.gif`:
-> upload a PDF (or load the sample), ask a question, and screen-record the
-> streamed, cited answer. Tools: [Kap](https://getkap.co) (macOS) or
-> [ScreenToGif](https://www.screentogif.com) (Windows). Keep it ~10 seconds.
-
 ---
 
 ## Demo flow
@@ -156,7 +143,7 @@ scripts/                         # verification + reset helpers
 
 ---
 
-## Interview talking points
+## Design decisions
 
 - **Why RAG, not fine-tuning?** Retrieval grounds answers in source text, is cheap, and updates instantly when documents change.
 - **Preventing hallucination:** strict grounding prompt + explicit refusal path + citations the user can verify.
