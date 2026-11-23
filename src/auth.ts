@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { ensureDemoUser } from "@/lib/demo";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -26,6 +27,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
+        return { id: user.id, email: user.email };
+      },
+    }),
+    // "Try the demo": no credentials, signs in to the shared demo account.
+    Credentials({
+      id: "demo",
+      credentials: {},
+      authorize: async () => {
+        const user = await ensureDemoUser();
         return { id: user.id, email: user.email };
       },
     }),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
+import { demoForbidden, isDemo } from "@/lib/demo";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -11,6 +12,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
+  if (isDemo(session)) return demoForbidden();
 
   let body: { currentPassword?: string; newPassword?: string };
   try {

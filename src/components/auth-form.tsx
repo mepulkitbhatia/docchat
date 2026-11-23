@@ -11,6 +11,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const isRegister = mode === "register";
 
@@ -56,9 +57,47 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
     }
   }
 
+  async function tryDemo() {
+    setError(null);
+    setDemoLoading(true);
+    try {
+      const result = await signIn("demo", { redirect: false });
+      if (result?.error) {
+        setError("The demo is unavailable right now. Please try again.");
+        return;
+      }
+      router.push("/");
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setDemoLoading(false);
+    }
+  }
+
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
+        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          DocChat
+        </p>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Chat with a PDF and get answers with citations.
+        </p>
+        <button
+          type="button"
+          onClick={tryDemo}
+          disabled={loading || demoLoading}
+          className="mt-4 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900"
+        >
+          {demoLoading ? "Opening the demo…" : "Try the demo"}
+        </button>
+        <p className="mt-2 text-center text-xs text-zinc-500">
+          No account needed — opens a sample document you can question.
+        </p>
+
+        <hr className="my-8 border-zinc-200 dark:border-zinc-800" />
+
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           {isRegister ? "Create your account" : "Welcome back"}
         </h1>
@@ -103,7 +142,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || demoLoading}
             className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
           >
             {loading

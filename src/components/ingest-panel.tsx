@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { useRef, useState } from "react";
 import ConfirmDialog from "@/components/confirm-dialog";
 
@@ -41,8 +42,11 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function IngestPanel({
   initialDocuments,
+  demo = false,
 }: {
   initialDocuments: DocItem[];
+  /** Shared demo account: uploads and deletes are off (the API refuses them too). */
+  demo?: boolean;
 }) {
   const [documents, setDocuments] = useState<DocItem[]>(initialDocuments);
   const [uploading, setUploading] = useState(false);
@@ -126,51 +130,68 @@ export default function IngestPanel({
 
   return (
     <section className="mt-12">
+      {demo && (
+        <p className="rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+          You&rsquo;re in the shared demo account. Open the sample document
+          below and ask it a question. Uploads and deletes are turned off
+          here, and questions are limited per hour.{" "}
+          <button
+            onClick={() => signOut({ redirectTo: "/register" })}
+            className="font-medium text-zinc-900 underline underline-offset-2 dark:text-zinc-100"
+          >
+            Create a free account
+          </button>{" "}
+          to use your own PDFs.
+        </p>
+      )}
+
       {/* Dropzone */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
-        onClick={() => !uploading && inputRef.current?.click()}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
-          dragOver
-            ? "border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-900"
-            : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-600"
-        } ${uploading ? "pointer-events-none opacity-60" : ""}`}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="application/pdf"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) upload(file);
+      {!demo && (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
           }}
-        />
-        {uploading ? (
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Processing your PDF — extracting text and chunking…
-          </p>
-        ) : (
-          <>
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              Drag &amp; drop a PDF here, or click to choose
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          onClick={() => !uploading && inputRef.current?.click()}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
+            dragOver
+              ? "border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-900"
+              : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-600"
+          } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) upload(file);
+            }}
+          />
+          {uploading ? (
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Processing your PDF — extracting text and chunking…
             </p>
-            <p className="mt-1 text-xs text-zinc-500">PDF only · up to 10 MB</p>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                Drag &amp; drop a PDF here, or click to choose
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">PDF only · up to 10 MB</p>
+            </>
+          )}
+        </div>
+      )}
 
       {error && (
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       {/* Empty state */}
-      {documents.length === 0 && !uploading && (
+      {documents.length === 0 && !uploading && !demo && (
         <div className="mt-6 text-center">
           <p className="text-sm text-zinc-500">
             No documents yet — upload a PDF, or
@@ -222,13 +243,15 @@ export default function IngestPanel({
 
                   <div className="flex shrink-0 items-center gap-3">
                     <StatusBadge status={d.status} />
-                    <button
-                      onClick={() => setPendingDelete(d)}
-                      aria-label={`Delete ${d.name}`}
-                      className="text-xs font-medium text-zinc-400 hover:text-red-600 dark:hover:text-red-400"
-                    >
-                      Delete
-                    </button>
+                    {!demo && (
+                      <button
+                        onClick={() => setPendingDelete(d)}
+                        aria-label={`Delete ${d.name}`}
+                        className="text-xs font-medium text-zinc-400 hover:text-red-600 dark:hover:text-red-400"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </li>
               );

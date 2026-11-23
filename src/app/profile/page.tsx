@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import ChangePasswordForm from "@/components/change-password-form";
 import DeleteAccount from "@/components/delete-account";
 import AppHeader from "@/components/app-header";
+import { isDemo } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -74,18 +75,27 @@ export default async function ProfilePage() {
           </div>
         </section>
 
-        {/* Change password */}
-        <section className="mt-6 rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
-          <h2 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Change password
-          </h2>
-          <ChangePasswordForm />
-        </section>
+        {isDemo(session) ? (
+          <p className="mt-6 text-sm text-zinc-500">
+            This is the shared demo account, so its password and data
+            can&rsquo;t be changed.
+          </p>
+        ) : (
+          <>
+            {/* Change password */}
+            <section className="mt-6 rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
+              <h2 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Change password
+              </h2>
+              <ChangePasswordForm />
+            </section>
 
-        {/* Danger zone */}
-        <section className="mt-6">
-          <DeleteAccount />
-        </section>
+            {/* Danger zone */}
+            <section className="mt-6">
+              <DeleteAccount />
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

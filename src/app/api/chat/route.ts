@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { demoRateLimit, isDemo } from "@/lib/demo";
 import { prisma } from "@/lib/prisma";
 import { retrieveChunks } from "@/lib/retrieval";
 import { streamAnswer, type ChatMessage } from "@/lib/groq";
@@ -15,6 +16,14 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  // The demo account is shared: limit questions per IP, and never store its
+  // conversations (one visitor's questions must not show up for the next).
+  const demo = isDemo(session);
+  if (demo) {
+    const limited = demoRateLimit(req);
+    if (limited) return limited;
   }
 
   let body: { documentId?: string; question?: string };
@@ -56,9 +65,11 @@ export async function POST(req: NextRequest) {
     }));
 
     // 2. Persist the user's question.
-    await prisma.message.create({
-      data: { documentId, role: "user", content: question },
-    });
+    if (!demo) {
+      await prisma.message.create({
+        data: { documentId, role: "user", content: question },
+      });
+    }
 
     // 3. Retrieve relevant passages for the current question.
     const chunks = await retrieveChunks(documentId, question, 5);
@@ -75,6 +86,7 @@ export async function POST(req: NextRequest) {
         citations,
         tokenStream: streamFromText(msg),
         onComplete: async () => {
+          if (demo) return;
           await prisma.message.create({
             data: { documentId, role: "assistant", content: msg },
           });
@@ -88,6 +100,7 @@ export async function POST(req: NextRequest) {
       citations,
       tokenStream,
       onComplete: async (full) => {
+        if (demo) return;
         await prisma.message.create({
           data: { documentId, role: "assistant", content: full },
         });

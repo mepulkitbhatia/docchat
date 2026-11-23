@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { demoRateLimit, isDemo } from "@/lib/demo";
 import { prisma } from "@/lib/prisma";
 import { streamSummary } from "@/lib/groq";
 import type { RetrievedChunk } from "@/lib/retrieval";
@@ -18,6 +19,14 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  // The demo account is shared: limit questions per IP, and never store its
+  // conversations (one visitor's questions must not show up for the next).
+  const demo = isDemo(session);
+  if (demo) {
+    const limited = demoRateLimit(req);
+    if (limited) return limited;
   }
 
   let body: { documentId?: string };
@@ -67,15 +76,18 @@ export async function POST(req: NextRequest) {
     }));
 
     // Persist the summary request as a user turn.
-    await prisma.message.create({
-      data: { documentId, role: "user", content: SUMMARY_LABEL },
-    });
+    if (!demo) {
+      await prisma.message.create({
+        data: { documentId, role: "user", content: SUMMARY_LABEL },
+      });
+    }
 
     const tokenStream = await streamSummary(chunks);
     return streamingAnswerResponse({
       citations: [], // a summary spans the whole document, not specific passages
       tokenStream,
       onComplete: async (full) => {
+        if (demo) return;
         await prisma.message.create({
           data: { documentId, role: "assistant", content: full },
         });

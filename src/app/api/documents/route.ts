@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { demoForbidden, isDemo } from "@/lib/demo";
 import { prisma } from "@/lib/prisma";
 import { extractPdfText } from "@/lib/pdf";
 import { chunkText } from "@/lib/chunk";
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
+  if (isDemo(session)) return demoForbidden();
 
   const formData = await req.formData();
   const file = formData.get("file");

@@ -1,5 +1,8 @@
 // A bundled sample document so reviewers can try DocChat instantly,
 // without finding and uploading their own PDF.
+import { prisma } from "@/lib/prisma";
+import { chunkText } from "@/lib/chunk";
+import { embedTexts, toVectorLiteral } from "@/lib/embeddings";
 
 export const SAMPLE_NAME = "Sample — Nimbus Notebooks Product Handbook.pdf";
 
@@ -40,3 +43,60 @@ New devices may be returned within 30 days of purchase for a full refund, provid
 
 Environmental Commitment
 Nimbus Notebooks are built with 40 percent recycled aluminum. Nimbus offers a free recycling program: customers can mail in any old laptop, from any brand, and Nimbus will recycle it responsibly at no charge.`;
+
+
+/**
+ * Make sure the sample document is ingested for this user and return its id
+ * (reuses the existing one if it's already loaded). Throws if ingest fails.
+ */
+export async function ensureSample(userId: string): Promise<string> {
+  const existing = await prisma.document.findFirst({
+    where: { name: SAMPLE_NAME, status: "ready", userId },
+  });
+  if (existing) return existing.id;
+
+  const doc = await prisma.document.create({
+    data: { name: SAMPLE_NAME, status: "processing", userId },
+  });
+
+  try {
+    const chunks = chunkText(SAMPLE_TEXT);
+
+    await prisma.chunk.createMany({
+      data: chunks.map((content, chunkIndex) => ({
+        documentId: doc.id,
+        content,
+        chunkIndex,
+      })),
+    });
+
+    const rows = await prisma.chunk.findMany({
+      where: { documentId: doc.id },
+      orderBy: { chunkIndex: "asc" },
+      select: { id: true, content: true },
+    });
+
+    const vectors = await embedTexts(rows.map((r) => r.content));
+
+    await prisma.$transaction(
+      rows.map(
+        (r, i) =>
+          prisma.$executeRaw`UPDATE "Chunk" SET embedding = ${toVectorLiteral(
+            vectors[i],
+          )}::vector WHERE id = ${r.id}`,
+      ),
+    );
+
+    await prisma.document.update({
+      where: { id: doc.id },
+      data: { status: "ready" },
+    });
+
+    return doc.id;
+  } catch (err) {
+    // Remove the half-ingested copy so a retry starts clean (the demo
+    // account has no way to delete a failed document).
+    await prisma.document.delete({ where: { id: doc.id } });
+    throw err;
+  }
+}

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import IngestPanel, { DocItem } from "@/components/ingest-panel";
 import AppHeader from "@/components/app-header";
+import { isDemo } from "@/lib/demo";
 
 // Always render fresh data (document list changes on upload).
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ export default async function Home() {
           source passages, so you can trust every answer.
         </p>
 
-        <IngestPanel initialDocuments={documents} />
+        <IngestPanel initialDocuments={documents} demo={isDemo(session)} />
 
         <div className="mt-16 grid gap-6 sm:grid-cols-3">
           {steps.map((s) => (
