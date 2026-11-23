@@ -39,7 +39,13 @@ export function streamingAnswerResponse(opts: {
   });
 
   return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      // Stop proxies (Cloudflare, in front of Render) from compressing and
+      // buffering the stream, which makes the answer arrive in one burst.
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
   });
 }
 

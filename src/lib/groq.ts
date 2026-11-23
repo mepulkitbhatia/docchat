@@ -7,9 +7,9 @@ import type { RetrievedChunk } from "@/lib/retrieval";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // Groq retired llama-3.3-70b-versatile on 2026-08-16. Of the replacements it
-// lists, this one keeps to the [n] citation format; openai/gpt-oss-120b often
-// writes 【n】 instead.
-const MODEL = "qwen/qwen3.8-27b";
+// lists, qwen/qwen3.8-27b is capped at 1,000 output tokens per minute on the
+// free tier (one summary uses most of that), so this one is used instead.
+const MODEL = "openai/gpt-oss-120b";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -102,7 +102,13 @@ export async function streamChat(
         try {
           const json = JSON.parse(payload);
           const delta = json.choices?.[0]?.delta?.content;
-          if (delta) controller.enqueue(encoder.encode(delta));
+          // This model often writes citations as 【1】 whatever the prompt
+          // says; keep them in the [1] form the rest of the app expects.
+          if (delta) {
+            controller.enqueue(
+              encoder.encode(delta.replace(/【/g, "[").replace(/】/g, "]")),
+            );
+          }
         } catch {
           // ignore keep-alive / non-JSON lines
         }

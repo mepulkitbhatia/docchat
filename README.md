@@ -36,7 +36,7 @@ flowchart TD
         R --> S[Vector similarity search<br/>cosine distance &lt;=&gt; top-k]
         E --> S
         S --> T[Build grounded prompt<br/>context + rules]
-        T --> U[Groq qwen3.8-27b<br/>stream answer]
+        T --> U[Groq gpt-oss-120b<br/>stream answer]
         U --> V[Streamed answer + citations]
     end
 ```
@@ -54,7 +54,7 @@ flowchart TD
 | Database / vectors | Neon Postgres + `pgvector` |
 | ORM | Prisma (raw SQL for vector ops) |
 | Embeddings | Google Gemini `gemini-embedding-001` (768 dims) |
-| LLM (answers) | Groq `qwen/qwen3.8-27b` (streamed) |
+| LLM (answers) | Groq `openai/gpt-oss-120b` (streamed) |
 | Auth | Auth.js (NextAuth v5): email + password, JWT sessions |
 | PDF parsing | `unpdf` (server-side) |
 | Hosting | Render (free tier) |
