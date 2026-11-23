@@ -52,7 +52,7 @@ model Message {
 
 // A chunk of a document plus its embedding vector (pgvector).
 // embedding is `Unsupported` because Prisma has no native vector type;
-// we read/write it with raw SQL. Dimension 768 = Google Gemini text-embedding-004.
+// we read/write it with raw SQL. Dimension 768 = Google Gemini gemini-embedding-001 (see src/lib/embeddings.ts).
 model Chunk {
   id         String   @id @default(cuid())
   documentId String
