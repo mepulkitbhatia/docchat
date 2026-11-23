@@ -28,7 +28,7 @@ export function demoForbidden() {
 // ingest the sample (nobody could delete the duplicate).
 let setup: Promise<{ id: string; email: string }> | null = null;
 
-/** Find or create the demo user and make sure the sample document is loaded. */
+/** Find or create the demo user and make sure the current sample document is loaded. */
 export function ensureDemoUser() {
   return (setup ??= (async () => {
     const user = await prisma.user.upsert({
@@ -37,7 +37,7 @@ export function ensureDemoUser() {
       // Not a bcrypt hash, so no password can ever log in to this account.
       create: { email: DEMO_EMAIL, passwordHash: "!" },
     });
-    await ensureSample(user.id);
+    await ensureSample(user.id, true); // also replaces an outdated copy
     return user;
   })().finally(() => {
     setup = null;

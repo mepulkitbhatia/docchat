@@ -118,6 +118,7 @@ npx tsx scripts/verify-db.ts          # check DB + pgvector + a similarity query
 npx tsx scripts/verify-embeddings.ts  # check chunks are embedded (768 dims)
 npx tsx scripts/reset-docs.ts         # delete all documents (clean slate)
 npx tsx scripts/test-demo-limit.ts    # self-check the demo rate limiter (no DB needed)
+npx tsx scripts/test-sample-chunks.ts # self-check the sample document's chunk layout (no DB needed)
 ```
 
 ---
@@ -129,7 +130,7 @@ npx tsx scripts/test-demo-limit.ts    # self-check the demo rate limiter (no DB 
 - **Vector search** (`src/lib/retrieval.ts`): pgvector's `<=>` cosine-distance operator via raw SQL (Prisma has no native vector type), returning the top-k chunks with similarity scores.
 - **Grounded answers** (`src/lib/groq.ts`): a strict system prompt forces the model to use only the provided context and to refuse when the answer isn't there. Responses are **streamed** token-by-token using a native `ReadableStream` (no extra framework).
 - **Accounts** (`src/auth.ts`): Auth.js credentials login with bcrypt-hashed passwords and JWT sessions. Every document, chunk, and message belongs to a user, and the document, chat, and account routes check the session and ownership.
-- **Demo account** (`src/lib/demo.ts`): "Try the demo" signs the visitor in to one shared account, created with the sample document on first use. The API refuses uploads, deletes, and password changes for it, never stores its conversations, and counts questions per IP in memory (fine for a single server instance).
+- **Demo account** (`src/lib/demo.ts`): "Try the demo" signs the visitor in to one shared account, created with the sample document (an 8-page product handbook, 8 chunks) on first use and given the current sample again whenever the bundled text changes. The API refuses uploads, deletes, and password changes for it, never stores its conversations, and counts questions per IP in memory (fine for a single server instance).
 
 ---
 
