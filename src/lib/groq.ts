@@ -6,7 +6,10 @@ import type { RetrievedChunk } from "@/lib/retrieval";
  */
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+// Groq retired llama-3.3-70b-versatile on 2026-08-16. Of the replacements it
+// lists, this one keeps to the [n] citation format; openai/gpt-oss-120b often
+// writes 【n】 instead.
+const MODEL = "qwen/qwen3.8-27b";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
